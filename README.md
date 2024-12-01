@@ -1,3 +1,18 @@
+# Deauther Nano Hardware Repo
+
+## New design for Spacehuhn's WiFi Deauther!
+You can find all the hardware files you need to make your own PCB with a Wemos D1 Mini ESP8266 in the "hardware" folder.
+
+<img src="img/deauther_nano1.JPG" alt='Deauther Logo' width='200' />
+<img src="img/deauther_nano2.JPG" alt='Deauther Logo' width='200' />
+<img src="img/deauther_nano3.JPG" alt='Deauther Logo' width='200' />
+<img src="img/deauther_nano4.JPG" alt='Deauther Logo' width='200' />
+<img src="img/deauther_nano5.JPG" alt='Deauther Logo' width='200' />
+<img src="img/deauther_nano6.JPG" alt='Deauther Logo' width='200' />
+<img src="img/deauther_nano7.JPG" alt='Deauther Logo' width='200' />
+<img src="img/deauther_nano8.JPG" alt='Deauther Logo' width='200' />
+<img src="img/deauther_nano9.JPG" alt='Deauther Logo' width='200' />
+
 # ESP8266 Deauther
 
 <img src='https://deauther.com/img/logo.png' alt='Deauther Logo' width='200' />
