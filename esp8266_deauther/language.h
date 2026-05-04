@@ -400,6 +400,18 @@ const char D_AP[] PROGMEM = "AP:";
 const char D_PKTS[] PROGMEM = "pkts";
 const char D_SEEN[] PROGMEM = "Seen:";
 
+// ===== DEAUTHER NANO ADDITIONS ===== //
+const char D_SETTINGS[] PROGMEM = "SETTINGS";
+const char D_INFO_SCREEN[] PROGMEM = "INFO";
+const char D_ALL_CH[] PROGMEM = "ALL CH:";
+const char D_WEB[] PROGMEM = "Web:";
+const char D_LED_SETTING[] PROGMEM = "LED:";
+const char D_DISP_TIMEOUT[] PROGMEM = "Disp:";
+const char D_SAVE_SETTINGS[] PROGMEM = "SAVE";
+const char D_ON[] PROGMEM = "ON";
+const char D_OFF[] PROGMEM = "OFF";
+const char D_IP[] PROGMEM = "IP:";
+
 // ===== STATIONS ===== //
 const char ST_CLEARED_LIST[] PROGMEM = "Cleared station list";
 const char ST_REMOVED_STATION[] PROGMEM = "Removed station ";

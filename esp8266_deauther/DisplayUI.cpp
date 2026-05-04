@@ -3,6 +3,7 @@
 #include "DisplayUI.h"
 
 #include "settings.h"
+#include "wifi.h"
 
 // ===== adjustable ===== //
 void DisplayUI::configInit() {
@@ -80,21 +81,18 @@ void DisplayUI::setup() {
 
     // MAIN MENU
     createMenu(&mainMenu, NULL, [this]() {
-        addMenuNode(&mainMenu, D_SCAN, &scanMenu);          /// SCAN
-        addMenuNode(&mainMenu, D_SHOW, &showMenu);          // SHOW
-        addMenuNode(&mainMenu, D_ATTACK, &attackMenu);      // ATTACK
+        addMenuNode(&mainMenu, D_SCAN, &scanMenu);           // SCAN
+        addMenuNode(&mainMenu, D_SHOW, &showMenu);           // SELECT
+        addMenuNode(&mainMenu, D_ATTACK, &attackMenu);       // ATTACK
         addMenuNode(&mainMenu, D_PACKET_MONITOR, [this]() { // PACKET MONITOR
             scan.start(SCAN_MODE_SNIFFER, 0, SCAN_MODE_OFF, 0, false, wifi_channel);
             mode = DISPLAY_MODE::PACKETMONITOR;
         });
-        addMenuNode(&mainMenu, D_CLOCK, &clockMenu); // CLOCK
-
-#ifdef HIGHLIGHT_LED
-        addMenuNode(&mainMenu, D_LED, [this]() {     // LED
-            highlightLED = !highlightLED;
-            digitalWrite(HIGHLIGHT_LED, highlightLED);
+        addMenuNode(&mainMenu, D_CLOCK, &clockMenu);         // CLOCK
+        addMenuNode(&mainMenu, D_SETTINGS, &settingsMenu);   // SETTINGS
+        addMenuNode(&mainMenu, D_INFO_SCREEN, [this]() {     // INFO
+            mode = DISPLAY_MODE::INFO;
         });
-#endif // ifdef HIGHLIGHT_LED
     });
 
     // SCAN MENU
@@ -431,7 +429,7 @@ void DisplayUI::setup() {
                              settings::getAttackSettings().timeout * 1000);
             }
         });
-        addMenuNode(&attackMenu, [this]() { // START
+        addMenuNode(&attackMenu, [this]() { // START/STOP
             return leftRight(str(attack.isRunning() ? D_STOP_ATTACK : D_START_ATTACK),
                              attack.getPacketRate() > 0 ? (String)attack.getPacketRate() : String(), maxLen - 1);
         }, [this]() {
@@ -439,21 +437,86 @@ void DisplayUI::setup() {
             else attack.start(beaconSelected, deauthSelected, false, probeSelected, true,
                               settings::getAttackSettings().timeout * 1000);
         });
+        addMenuNode(&attackMenu, [this]() { // ALL CH toggle
+            return leftRight(str(D_ALL_CH), settings::getAttackSettings().attack_all_ch ? str(D_ON) : str(D_OFF), maxLen - 1);
+        }, [this]() {
+            attack_settings_t as = settings::getAttackSettings();
+            as.attack_all_ch = !as.attack_all_ch;
+            settings::setAttackSettings(as);
+        });
     });
 
     // CLOCK MENU
     createMenu(&clockMenu, &mainMenu, [this]() {
-        addMenuNode(&clockMenu, D_CLOCK_DISPLAY, [this]() { // CLOCK
+        addMenuNode(&clockMenu, D_CLOCK_DISPLAY, [this]() { // CLOCK DISPLAY
             mode = DISPLAY_MODE::CLOCK_DISPLAY;
             display.setFont(ArialMT_Plain_24);
             display.setTextAlignment(TEXT_ALIGN_CENTER);
         });
-        addMenuNode(&clockMenu, D_CLOCK_SET, [this]() { // CLOCK SET TIME
+        addMenuNode(&clockMenu, D_CLOCK_SET, [this]() { // SET CLOCK
             mode = DISPLAY_MODE::CLOCK;
             display.setFont(ArialMT_Plain_24);
             display.setTextAlignment(TEXT_ALIGN_CENTER);
         });
     });
+
+    // SETTINGS MENU
+    createMenu(&settingsMenu, &mainMenu, [this]() {
+        // Channel: cycle 1–13
+        addMenuNode(&settingsMenu, [this]() {
+            return leftRight(String(F("CH:")), String(wifi_channel), maxLen - 1);
+        }, [this]() {
+            uint8_t ch = (wifi_channel % 13) + 1;
+            scan.setChannel(ch);
+            wifi_settings_t ws = settings::getWifiSettings();
+            ws.channel = ch;
+            settings::setWifiSettings(ws);
+        });
+        // LED toggle
+        addMenuNode(&settingsMenu, [this]() {
+            return leftRight(str(D_LED_SETTING), settings::getLEDSettings().enabled ? str(D_ON) : str(D_OFF), maxLen - 1);
+        }, [this]() {
+            led_settings_t ls = settings::getLEDSettings();
+            ls.enabled = !ls.enabled;
+            settings::setLEDSettings(ls);
+        });
+        // Display timeout cycle: 30/60/120/300/600 s
+        addMenuNode(&settingsMenu, [this]() {
+            return leftRight(str(D_DISP_TIMEOUT), String(settings::getDisplaySettings().timeout) + String(F("s")), maxLen - 1);
+        }, [this]() {
+            const uint32_t times[] = {30, 60, 120, 300, 600};
+            uint32_t cur  = settings::getDisplaySettings().timeout;
+            uint32_t next = times[0];
+            for (int i = 0; i < 5; i++) {
+                if (times[i] == cur) { next = times[(i + 1) % 5]; break; }
+            }
+            display_settings_t ds = settings::getDisplaySettings();
+            ds.timeout = next;
+            settings::setDisplaySettings(ds);
+        });
+        // Web AP toggle
+        addMenuNode(&settingsMenu, [this]() {
+            return leftRight(str(D_WEB), settings::getWebSettings().enabled ? str(D_ON) : str(D_OFF), maxLen - 1);
+        }, [this]() {
+            if (settings::getWebSettings().enabled) {
+                wifi::stopAP();
+                web_settings_t ws = settings::getWebSettings();
+                ws.enabled = false;
+                settings::setWebSettings(ws);
+            } else {
+                web_settings_t ws = settings::getWebSettings();
+                ws.enabled = true;
+                settings::setWebSettings(ws);
+                wifi::startAP();
+            }
+        });
+        // Save settings
+        addMenuNode(&settingsMenu, D_SAVE_SETTINGS, [this]() {
+            settings::save(true);
+        });
+    });
+
+    // INFO is handled as a mode (DISPLAY_MODE::INFO), no menu struct needed
 
     // ===================== //
 
@@ -615,6 +678,10 @@ void DisplayUI::setupButtons() {
                     display.setFont(DejaVu_Sans_Mono_12);
                     display.setTextAlignment(TEXT_ALIGN_LEFT);
                     break;
+
+                case DISPLAY_MODE::INFO:
+                    mode = DISPLAY_MODE::MENU;
+                    break;
             }
         }
     });
@@ -653,6 +720,10 @@ void DisplayUI::setupButtons() {
                     mode = DISPLAY_MODE::MENU;
                     display.setFont(DejaVu_Sans_Mono_12);
                     display.setTextAlignment(TEXT_ALIGN_LEFT);
+                    break;
+
+                case DISPLAY_MODE::INFO:
+                    mode = DISPLAY_MODE::MENU;
                     break;
             }
         }
@@ -715,6 +786,9 @@ void DisplayUI::draw(bool force) {
             case DISPLAY_MODE::RESETTING:
                 drawResetting();
                 break;
+            case DISPLAY_MODE::INFO:
+                drawInfo();
+                break;
         }
 
         updateSuffix();
@@ -728,21 +802,31 @@ void DisplayUI::drawButtonTest() {
     drawString(3, str(D_B) + b2s(b->read()));
 }
 
+void DisplayUI::drawStatusBar() {
+    drawLine(0, 49, 127, 49);
+    String chStr = String(F("CH:")) + String(wifi_channel);
+    String stateStr;
+    if (attack.isRunning()) stateStr = F("[ATK]");
+    else if (scan.isScanning()) stateStr = F("[SCN]");
+    else stateStr = F("[---]");
+    drawString(0, 52, leftRight(chStr, stateStr, maxLen));
+}
+
 void DisplayUI::drawMenu() {
     String tmp;
     int    tmpLen;
-    int    row = (currentMenu->selected / 5) * 5;
+    int    row = (currentMenu->selected / 4) * 4;
 
     // correct selected if it's off
     if (currentMenu->selected < 0) currentMenu->selected = 0;
     else if (currentMenu->selected >= currentMenu->list->size()) currentMenu->selected = currentMenu->list->size() - 1;
 
-    // draw menu entries
-    for (int i = row; i < currentMenu->list->size() && i < row + 5; i++) {
+    // draw 4 menu entries per page
+    for (int i = row; i < currentMenu->list->size() && i < row + 4; i++) {
         tmp    = currentMenu->list->get(i).getStr();
         tmpLen = tmp.length();
 
-        // horizontal scrolling
+        // horizontal scrolling for selected long items
         if ((currentMenu->selected == i) && (tmpLen >= maxLen)) {
             tmp = tmp + tmp;
             tmp = tmp.substring(scrollCounter, scrollCounter + maxLen - 1);
@@ -756,8 +840,10 @@ void DisplayUI::drawMenu() {
         }
 
         tmp = (currentMenu->selected == i ? CURSOR : SPACE) + tmp;
-        drawString(0, (i - row) * 12, tmp);
+        drawString(0, (i - row) * lineHeight, tmp);
     }
+
+    drawStatusBar();
 }
 
 void DisplayUI::drawLoadingScan() {
@@ -779,7 +865,9 @@ void DisplayUI::drawLoadingScan() {
 void DisplayUI::drawPacketMonitor() {
     double scale = scan.getScaleFactor(sreenHeight - lineHeight - 2);
 
-    String headline = leftRight(str(D_CH) + getChannel() + String(' ') + String('[') + String(scan.deauths) + String(']'), String(scan.getPacketRate()) + str(D_PKTS), maxLen);
+    String left = str(D_CH) + getChannel();
+    if (scan.deauths > 0) left += String(F(" D:")) + String(scan.deauths);
+    String headline = leftRight(left, String(scan.getPacketRate()) + str(D_PKTS), maxLen);
 
     drawString(0, 0, headline);
 
@@ -829,6 +917,15 @@ void DisplayUI::drawClock() {
 
 void DisplayUI::drawResetting() {
     drawString(2, center(str(D_RESETTING), maxLen));
+}
+
+void DisplayUI::drawInfo() {
+    IPAddress apIP(AP_IP_ADDR);
+    drawString(0, str(D_IP) + apIP.toString());
+    drawString(1, String(F("CH: ")) + String(wifi_channel));
+    drawString(2, String(F("AP: ")) + String(settings::getAccessPointSettings().ssid));
+    drawString(3, String(F("v")) + String(DEAUTHER_VERSION));
+    drawString(4, center(String(F("[A/B] back")), maxLen));
 }
 
 void DisplayUI::clearMenu(Menu* menu) {

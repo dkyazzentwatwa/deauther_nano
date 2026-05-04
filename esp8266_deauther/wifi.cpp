@@ -24,9 +24,10 @@ extern bool progmemToSpiffs(const char* adr, int len, String path);
 
 #include "webfiles.h"
 
-extern Scan   scan;
-extern CLI    cli;
-extern Attack attack;
+extern Scan     scan;
+extern CLI      cli;
+extern Attack   attack;
+extern uint8_t  wifi_channel;
 
 typedef enum wifi_mode_t {
     off = 0,
@@ -417,6 +418,17 @@ namespace wifi {
 
         server.on("/attack.json", HTTP_GET, []() {
             server.send(200, str(W_JSON), attack.getStatusJSON());
+        });
+
+        server.on("/status.json", HTTP_GET, []() {
+            String json = String(F("{"));
+            json += String(F("\"version\":\"")) + String(DEAUTHER_VERSION) + String(F("\","));
+            json += String(F("\"channel\":")) + String(wifi_channel) + String(F(","));
+            json += String(F("\"ap_ssid\":\"")) + String(ap_settings.ssid) + String(F("\","));
+            json += String(F("\"attack\":")) + String(attack.isRunning() ? "true" : "false") + String(F(","));
+            json += String(F("\"scan\":")) + String(scan.isScanning() ? "true" : "false");
+            json += String(F("}"));
+            server.send(200, str(W_JSON), json);
         });
 
         // called when the url is not defined here

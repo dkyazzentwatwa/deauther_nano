@@ -78,7 +78,8 @@ enum class DISPLAY_MODE { OFF,
                           INTRO,
                           CLOCK,
                           CLOCK_DISPLAY,
-                          RESETTING };
+                          RESETTING,
+                          INFO };
 
 class DisplayUI {
     public:
@@ -158,6 +159,8 @@ class DisplayUI {
         Menu showMenu;
         Menu attackMenu;
         Menu clockMenu;
+        Menu settingsMenu;
+        Menu infoMenu;
 
         Menu apListMenu;
         Menu stationListMenu;
@@ -177,10 +180,12 @@ class DisplayUI {
         void draw(bool force = false);
         void drawButtonTest();
         void drawMenu();
+        void drawStatusBar();
         void drawLoadingScan();
         void drawPacketMonitor();
         void drawIntro();
         void drawResetting();
+        void drawInfo();
         void clearMenu(Menu* menu);
 
         // menu functions

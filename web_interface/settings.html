@@ -1,68 +1,63 @@
-<!--- This software is licensed under the MIT License: https://github.com/spacehuhntech/esp8266_deauther -->
-
-<!Doctype html>
-<html>
-
+<!DOCTYPE html>
+<html lang="en">
 <head>
-	<meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=0.8, minimal-ui">
-	<meta name="theme-color" content="#36393E">
-
-	<meta name="description" content="ESP8266 Deauther">
-	<title>ESP8266 Deauther</title>
-
-	<link rel="stylesheet" type="text/css" href="style.css">
-	<script src="js/site.js"></script>
-	<script src="js/settings.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0d1117">
+  <meta name="description" content="Deauther Nano — Settings">
+  <title>Settings — Deauther Nano</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="js/site.js"></script>
+  <script src="js/settings.js"></script>
 </head>
-
 <body onload="loadLang()">
-	<nav>
-		<ul class="menu">
-			<li><a href="scan.html" data-translate="scan">Scan</a></li>
-			<li><a href="ssids.html" data-translate="ssids">SSIDs</a></li>
-			<li><a href="attack.html" data-translate="attacks">Attack</a></li>
-			<li><a href="settings.html" data-translate="settings">Settings</a></li>
-		</ul>
-	</nav>
+  <nav>
+    <ul class="menu">
+      <li><a href="scan.html"     data-translate="scan">Scan</a></li>
+      <li><a href="ssids.html"    data-translate="ssids">SSIDs</a></li>
+      <li><a href="attack.html"   data-translate="attacks">Attack</a></li>
+      <li><a href="settings.html" data-translate="settings">Settings</a></li>
+      <li><span id="deviceStatus"><span class="ds-dot"></span><span id="dsText">--</span></span></li>
+    </ul>
+  </nav>
 
-	<div id="status"></div>
+  <div id="status" class="status-ok"><span class="status-dot dot-ok"></span>Connected</div>
 
-	<div class="container">
-		<div class="row">
-			<div class="col-12">
-				<h1 class="header" data-translate="settings">Settings</h1>
+  <div class="container">
+    <div class="row">
+      <div class="col-12">
+        <h1 data-translate="settings">Settings</h1>
 
-				<button
-					onclick="getFile('run?cmd=stopap');alert('Turning off access point now. Restart your Deauther to be able to connect again.')"
-					class="red" data-translate="wifi_off">WiFi off</button>
-				<button onclick="getFile('run?cmd=reset;;save settings')" class="red"
-					data-translate="reset">Reset</button>
-				<button onclick="getFile('run?cmd=reboot')" class="red right" data-translate="reboot">reboot</button>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px;">
+          <button onclick="save()" data-translate="save" class="btn-accent">Save</button>
+          <button onclick="load()" data-translate="reload">Reload</button>
+        </div>
 
-				<p>
-					<span class="red" data-translate="info_span">INFO:</span><br>
-					<span data-translate="settings_info">
-						- Some settings require a reboot.<br>
-						- Click save to make sure that your changes are applied.<br>
-					</span>
-					<span data-translate="info_disclaimer">In case of an unexpected error, please reload the site and
-						look at the serial monitor for further debugging.</span><br>
-				</p>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:4px;">
+          <button onclick="getFile('run?cmd=reset;;save settings')" class="btn-danger" data-translate="reset">Factory Reset</button>
+          <button onclick="getFile('run?cmd=reboot')" class="btn-danger" data-translate="reboot">Reboot</button>
+          <button onclick="if(confirm('Turn off WiFi? Reboot to reconnect.')) getFile('run?cmd=stopap');" class="btn-danger" data-translate="wifi_off">WiFi Off</button>
+        </div>
 
-				<button onclick="save()" data-translate="save">save</button>
-				<button onclick="load()" class="right" data-translate="reload">reload</button>
-			</div>
-		</div>
+        <p class="muted" style="font-size:12px; margin:10px 0 4px;" data-translate="settings_info">
+          Some settings require a reboot. Click Save before rebooting.
+        </p>
+        <hr>
+      </div>
+    </div>
 
-		<div id="settingsList"></div>
-	</div>
-	<footer>
-		<span id="version">Version 2.6.1</span>
-		<br>
-		<br>
-		<a href="http://deauther.maltronics.com" target="_blank">Wiki</a> | <a href="info.html">Credits</a>
-	</footer>
+    <div id="settingsList"></div>
+  </div>
+
+  <footer>
+    <span id="version">Deauther Nano v2.6.1</span> &nbsp;·&nbsp;
+    <a href="info.html">Credits</a>
+  </footer>
+
+  <script>
+    document.querySelectorAll('.menu a').forEach(function(a) {
+      if (a.href === location.href) a.classList.add('active');
+    });
+  </script>
 </body>
-
 </html>

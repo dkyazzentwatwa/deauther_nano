@@ -1,126 +1,101 @@
-/* This software is licensed under the MIT License: https://github.com/spacehuhntech/esp8266_deauther */
+/* Deauther Nano — site.js */
 
 var langJson = {};
 
-function getE(name) {
-	return document.getElementById(name);
-}
+function getE(id) { return document.getElementById(id); }
 
 function esc(str) {
-	if (str) {
-		return str.toString()
-			.replace(/&/g, '&amp;')
-			.replace(/</g, '&lt;')
-			.replace(/>/g, '&gt;')
-			.replace(/\"/g, '&quot;')
-			.replace(/\'/g, '&#39;')
-			.replace(/\//g, '&#x2F;');
-	}
-	return "";
+  if (str) {
+    return str.toString()
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;')
+      .replace(/\//g, '&#x2F;');
+  }
+  return '';
 }
 
 function convertLineBreaks(str) {
-	if (str) {
-		str = str.toString();
-		str = str.replace(/(?:\r\n|\r|\n)/g, '<br>');
-		return str;
-	}
-	return "";
+  if (str) return str.toString().replace(/(?:\r\n|\r|\n)/g, '<br>');
+  return '';
 }
 
 function showMessage(msg) {
-	if (msg.startsWith("ERROR")) {
-		getE("status").style.backgroundColor = "#d33";
-		getE("status").innerHTML = "disconnected";
-
-		console.error("disconnected (" + msg + ")");
-	} else if (msg.startsWith("LOADING")) {
-		getE("status").style.backgroundColor = "#fc0";
-		getE("status").innerHTML = "loading...";
-	} else {
-		getE("status").style.backgroundColor = "#3c5";
-		getE("status").innerHTML = "connected";
-
-		console.log("" + msg + "");
-	}
+  var el = getE('status');
+  if (!el) return;
+  if (msg.startsWith('ERROR')) {
+    el.className = 'status-error';
+    el.innerHTML = '<span class="status-dot dot-error"></span>Disconnected';
+  } else if (msg.startsWith('LOADING')) {
+    el.className = 'status-loading';
+    el.innerHTML = '<span class="status-dot dot-loading"></span>Loading…';
+  } else {
+    el.className = 'status-ok';
+    el.innerHTML = '<span class="status-dot dot-ok"></span>Connected';
+  }
 }
 
 function getFile(adr, callback, timeout, method, onTimeout, onError) {
-	/* fallback stuff */
-	if (adr === undefined) return;
-	if (callback === undefined) callback = function () { };
-	if (timeout === undefined) timeout = 8000;
-	if (method === undefined) method = "GET";
-	if (onTimeout === undefined) {
-		onTimeout = function () {
-			showMessage("ERROR: timeout loading file " + adr);
-		};
-	}
-	if (onError === undefined) {
-		onError = function () {
-			showMessage("ERROR: loading file: " + adr);
-		};
-	}
+  if (adr === undefined) return;
+  if (callback  === undefined) callback  = function() {};
+  if (timeout   === undefined) timeout   = 8000;
+  if (method    === undefined) method    = 'GET';
+  if (onTimeout === undefined) onTimeout = function() { showMessage('ERROR: timeout ' + adr); };
+  if (onError   === undefined) onError   = function() { showMessage('ERROR: ' + adr); };
 
-	/* create request */
-	var request = new XMLHttpRequest();
-
-	/* set parameter for request */
-	request.open(method, encodeURI(adr), true);
-	request.timeout = timeout;
-	request.ontimeout = onTimeout;
-	request.onerror = onError;
-	request.overrideMimeType("application/json");
-
-	request.onreadystatechange = function () {
-		if (this.readyState == 4) {
-			if (this.status == 200) {
-				showMessage("CONNECTED");
-				callback(this.responseText);
-			}
-		}
-	};
-
-	showMessage("LOADING");
-
-	/* send request */
-	request.send();
-
-	console.log(adr);
+  var req = new XMLHttpRequest();
+  req.open(method, encodeURI(adr), true);
+  req.timeout = timeout;
+  req.ontimeout = onTimeout;
+  req.onerror   = onError;
+  req.overrideMimeType('application/json');
+  req.onreadystatechange = function() {
+    if (this.readyState === 4 && this.status === 200) {
+      showMessage('CONNECTED');
+      callback(this.responseText);
+    }
+  };
+  showMessage('LOADING');
+  req.send();
 }
 
-function lang(key) {
-	return convertLineBreaks(esc(langJson[key]));
-}
+function lang(key) { return convertLineBreaks(esc(langJson[key])); }
 
 function parseLang(fileStr) {
-	langJson = JSON.parse(fileStr);
-	if (langJson["lang"] != "en") {// no need to update the HTML	
-		var elements = document.querySelectorAll("[data-translate]");
-		for (i = 0; i < elements.length; i++) {
-			var element = elements[i];
-			element.innerHTML = lang(element.getAttribute("data-translate"));
-		}
-	}
-	document.querySelector('html').setAttribute("lang", langJson["lang"]);
-	if (typeof load !== 'undefined') load();
+  langJson = JSON.parse(fileStr);
+  if (langJson['lang'] !== 'en') {
+    document.querySelectorAll('[data-translate]').forEach(function(el) {
+      el.innerHTML = lang(el.getAttribute('data-translate'));
+    });
+  }
+  document.querySelector('html').setAttribute('lang', langJson['lang']);
+  if (typeof load !== 'undefined') load();
 }
 
 function loadLang() {
-	var language = "default"; //navigator.language.slice(0, 2);
-	getFile("lang/" + language + ".lang",
-		parseLang,
-		2000,
-		"GET",
-		function () {
-			getFile("lang/en.lang", parseLang);
-		}, function () {
-			getFile("lang/en.lang", parseLang);
-		}
-	);
+  getFile('lang/default.lang', parseLang, 2000, 'GET',
+    function() { getFile('lang/en.lang', parseLang); },
+    function() { getFile('lang/en.lang', parseLang); }
+  );
 }
 
-window.addEventListener('load', function () {
-	getE("status").style.backgroundColor = "#3c5";
-	getE("status").innerHTML = "connected";
+/* Load device status chip */
+function loadDeviceStatus() {
+  var el = getE('deviceStatus');
+  var tx = getE('dsText');
+  if (!el || !tx) return;
+  getFile('status.json', function(res) {
+    try {
+      var s = JSON.parse(res);
+      tx.textContent = 'CH:' + s.channel + (s.attack ? ' ⚡ATK' : s.scan ? ' 🔍SCN' : '');
+      el.className = 'online';
+    } catch(e) {}
+  }, 4000, 'GET', function(){}, function(){});
+}
+
+window.addEventListener('load', function() {
+  showMessage('CONNECTED');
+  loadDeviceStatus();
 });

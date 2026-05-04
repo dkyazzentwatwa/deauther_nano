@@ -1,122 +1,106 @@
-<!--- This software is licensed under the MIT License: https://github.com/spacehuhntech/esp8266_deauther -->
-
-<!Doctype html>
-<html>
-
+<!DOCTYPE html>
+<html lang="en">
 <head>
-	<meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=0.8, minimal-ui">
-	<meta name="theme-color" content="#36393E">
-
-	<meta name="description" content="ESP8266 Deauther">
-	<title>ESP8266 Deauther</title>
-
-	<link rel="stylesheet" type="text/css" href="style.css">
-	<script src="js/site.js"></script>
-	<script src="js/attack.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0d1117">
+  <meta name="description" content="Deauther Nano — Attack">
+  <title>Attack — Deauther Nano</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="js/site.js"></script>
+  <script src="js/attack.js"></script>
 </head>
-
 <body onload="loadLang()">
-	<nav>
-		<ul class="menu">
-			<li><a href="scan.html" data-translate="scan">Scan</a></li>
-			<li><a href="ssids.html" data-translate="ssids">SSIDs</a></li>
-			<li><a href="attack.html" data-translate="attacks">Attack</a></li>
-			<li><a href="settings.html" data-translate="settings">Settings</a></li>
-		</ul>
-	</nav>
+  <nav>
+    <ul class="menu">
+      <li><a href="scan.html"     data-translate="scan">Scan</a></li>
+      <li><a href="ssids.html"    data-translate="ssids">SSIDs</a></li>
+      <li><a href="attack.html"   data-translate="attacks">Attack</a></li>
+      <li><a href="settings.html" data-translate="settings">Settings</a></li>
+      <li><span id="deviceStatus"><span class="ds-dot"></span><span id="dsText">--</span></span></li>
+    </ul>
+  </nav>
 
-	<div id="status"></div>
+  <div id="status" class="status-ok"><span class="status-dot dot-ok"></span>Connected</div>
 
-	<div class="container">
-		<div class="row">
-			<div class="col-12">
-				<h1 class="header" data-translate="attacks">Attacks</h1>
+  <div class="container">
+    <div class="row">
+      <div class="col-12">
+        <h1 data-translate="attacks">Attacks</h1>
 
-				<p>
-					<span class="red" data-translate="info_span">INFO:</span><br>
-					<span data-translate="attack_info">
-						- You might lose connection when starting an attack!<br>
-						- You need to select a target for the deauth attack.<br>
-						- You need a saved SSID for the beacon and probe attack.<br>
-						- Click reload to refresh the packet rate.<br>
-					</span>
-					<span data-translate="info_disclaimer">In case of an unexpected error, please reload the site and
-						look at the serial monitor for further debugging.</span><br>
-				</p>
-				<p class="right">
-					<button onclick="stopAll()" data-translate="stop">stop</button>
-					<button onclick="load()" data-translate="reload">reload</button>
-				</p>
-				<table>
-					<tr>
-						<th data-translate="attacks">Attacks</th>
-						<th data-translate="targets">Targets</th>
-						<th>Pkts/s</th>
-						<th data-translate="start_stop">START / STOP</th>
-					</tr>
-					<tr>
-						<td>Deauth</td>
-						<td id="deauthTargets">0</td>
-						<td id="deauthPkts">0/0</td>
-						<td><button id="deauth" onclick="start(0)" class="select" data-translate="start">START</button>
-						</td>
-					</tr>
-					<tr>
-						<td>Beacon</td>
-						<td id="beaconTargets">0</td>
-						<td id="beaconPkts">0/0</td>
-						<td><button id="beacon" onclick="start(1)" class="select" data-translate="start">START</button>
-						</td>
-					</tr>
-					<tr>
-						<td>Probe</td>
-						<td id="probeTargets">0</td>
-						<td id="probePkts">0/0</td>
-						<td><button id="probe" onclick="start(2)" class="select" data-translate="start">START</button>
-						</td>
-					</tr>
-					<tr>
-						<td colspan="2">All Pkts/s:</td>
-						<td colspan="2" id="allpkts">0</td>
-					</tr>
-				</table>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:14px;">
+          <button id="stopAllBtn" onclick="stopAll()" class="btn-danger" data-translate="stop">Stop All</button>
+          <button onclick="load()" data-translate="reload">Reload</button>
+          <span id="autoRefreshBadge" style="display:none;" class="badge-running">LIVE</span>
+        </div>
 
-				<h2>Deauth</h2>
-				<p data-translate="deauth_desc">
-					Closes the connection of WiFi devices by sending deauthentication frames to access points and client
-					devices you selected.<br>
-					This is only possible because a lot of devices don't use the 802.11w-2009 standard that offers a
-					protection against this attack.<br>
-					Please only select one target! When you select multiple targets that run on different channels and
-					start the attack,
-					it will quickly switch between those channels and you have no chance to reconnect to the access
-					point that hosts this web interface.
-				</p>
+        <div style="overflow-x:auto;">
+          <table id="attackTable">
+            <thead>
+              <tr>
+                <th data-translate="attacks">Attack</th>
+                <th data-translate="targets">Targets</th>
+                <th>Pkts / s</th>
+                <th data-translate="start_stop">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr id="rowDeauth">
+                <td><span data-translate="deauth_name">Deauth</span><span id="badgeDeauth" class="badge-running" style="display:none;">RUNNING</span></td>
+                <td id="deauthTargets">—</td>
+                <td id="deauthPkts">—</td>
+                <td><button id="deauth" onclick="start(0)" class="select" data-translate="start">START</button></td>
+              </tr>
+              <tr id="rowBeacon">
+                <td><span data-translate="beacon_name">Beacon</span><span id="badgeBeacon" class="badge-running" style="display:none;">RUNNING</span></td>
+                <td id="beaconTargets">—</td>
+                <td id="beaconPkts">—</td>
+                <td><button id="beacon" onclick="start(1)" class="select" data-translate="start">START</button></td>
+              </tr>
+              <tr id="rowProbe">
+                <td><span data-translate="probe_name">Probe</span><span id="badgeProbe" class="badge-running" style="display:none;">RUNNING</span></td>
+                <td id="probeTargets">—</td>
+                <td id="probePkts">—</td>
+                <td><button id="probe" onclick="start(2)" class="select" data-translate="start">START</button></td>
+              </tr>
+              <tr>
+                <td colspan="2" class="muted" style="font-size:12px;">Total packets / s</td>
+                <td colspan="2" id="allpkts" style="font-weight:bold; color:var(--accent);">—</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
 
-				<h2>Beacon</h2>
-				<p data-translate="beacon_desc">
-					Beacon packets are used to advertise access points. By continuously sending beacon packets out, it
-					will look like you created new WiFi networks.<br>
-					You can specify the network names under SSIDs.<br>
-				</p>
+        <hr>
+        <h2>Deauth</h2>
+        <p class="muted" data-translate="deauth_desc" style="font-size:13px;">
+          Sends deauthentication frames to disconnect clients from their access point.
+          Requires a selected target. Works on devices that don't implement 802.11w.
+        </p>
 
-				<h2>Probe</h2>
-				<p data-translate="probe_desc">
-					Probe requests are sent by client devices to ask if a known network is nearby.<br>
-					Use this attack to confuse WiFi trackers by asking for networks that you specified in the SSID
-					list.<br>
-					It's unlikely you will see any impact by this attack with your home network.<br>
-				</p>
-			</div>
-		</div>
-	</div>
-	<footer>
-		<span id="version">Version 2.6.1</span>
-		<br>
-		<br>
-		<a href="http://deauther.maltronics.com" target="_blank">Wiki</a> | <a href="info.html">Credits</a>
-	</footer>
+        <h2>Beacon</h2>
+        <p class="muted" data-translate="beacon_desc" style="font-size:13px;">
+          Broadcasts fake access point advertisements. Configure SSIDs in the SSIDs tab.
+        </p>
+
+        <h2>Probe</h2>
+        <p class="muted" data-translate="probe_desc" style="font-size:13px;">
+          Sends probe requests as if looking for known networks, confusing WiFi trackers.
+          Requires SSIDs to be configured.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <span id="version">Deauther Nano v2.6.1</span> &nbsp;·&nbsp;
+    <a href="info.html">Credits</a>
+  </footer>
+
+  <script>
+    document.querySelectorAll('.menu a').forEach(function(a) {
+      if (a.href === location.href) a.classList.add('active');
+    });
+  </script>
 </body>
-
 </html>
