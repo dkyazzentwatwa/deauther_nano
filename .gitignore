@@ -10,3 +10,29 @@
 *.pyc
 
 utils/web_converter/css_html_js_minify/__pycache__/
+
+# Local OS files
+.DS_Store
+
+# Generated dependencies and build outputs
+node_modules/
+build/
+dist/
+out/
+.next/
+.nuxt/
+.vite/
+.turbo/
+.vercel/
+coverage/
+.pio/
+.pioenvs/
+.piolibdeps/
+DerivedData/
+*.xcresult
+*.tsbuildinfo
+*.elf
+*.map
+*.hex
+*.log
+*.tmp
